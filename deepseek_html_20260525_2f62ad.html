@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>💰 JS & SOFU EARN - Earn Money App</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        /* ========== STYLES (same as before, compact) ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, #0B1120 0%, #192132 100%); min-height: 100vh; padding-bottom: 80px; color: #F1F5F9; overflow-x: hidden; }
+        .glass-card { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 20px rgba(0,0,0,0.3); transition: 0.2s; }
+        .btn-gold { background: linear-gradient(95deg, #F59E0B, #F97316); border: none; color: #0F172A; font-weight: bold; padding: 10px 20px; border-radius: 60px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(245,158,11,0.3); }
+        .btn-gold:active { transform: scale(0.96); }
+        .btn-secondary { background: #3B82F6; border: none; color: white; padding: 10px 20px; border-radius: 60px; cursor: pointer; }
+        .video-card { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); border-radius: 24px; padding: 16px; transition: 0.2s; border-left: 4px solid #F59E0B; margin-bottom: 16px; cursor: pointer; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .grid-promo { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15,23,42,0.95); backdrop-filter: blur(20px); display: flex; justify-content: space-around; padding: 10px 20px 20px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
+        .nav-item { text-align: center; color: #94A3B8; font-size: 12px; transition: 0.2s; cursor: pointer; padding: 5px 10px; border-radius: 40px; }
+        .nav-item.active { color: #F59E0B; background: rgba(245,158,11,0.2); transform: translateY(-3px); }
+        .nav-icon { font-size: 24px; display: block; }
+        .coin-badge { background: #F59E0B; color: #0F172A; border-radius: 40px; padding: 6px 16px; font-weight: bold; white-space: nowrap; }
+        .round-coin { background: linear-gradient(145deg, #F59E0B, #F97316); width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; box-shadow: 0 0 20px rgba(245,158,11,0.5); cursor: pointer; transition: 0.2s; }
+        .round-coin span { font-size: 12px; font-weight: bold; color: #0F172A; }
+        .round-coin strong { font-size: 22px; }
+        .round-coin:hover { transform: scale(1.02); }
+        input, select, textarea { background: #0F172A; border: 1px solid #334155; padding: 12px 16px; border-radius: 60px; color: white; width: 100%; margin: 8px 0; outline: none; }
+        input:focus { border-color: #F59E0B; }
+        .progress-bar { background: #1E293B; border-radius: 20px; height: 8px; margin: 12px 0; overflow: hidden; }
+        .progress-fill { background: linear-gradient(90deg, #F59E0B, #F97316); width: 0%; height: 100%; border-radius: 20px; }
+        .tab-content { display: none; }
+        .tab-content.active-tab { display: block; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #1E293B; padding: 24px; border-radius: 32px; width: 90%; max-width: 500px; text-align: center; border: 1px solid #F59E0B; position: relative; max-height: 80vh; overflow-y: auto; }
+        .modal-close { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; background: none; border: none; color: #94a3b8; }
+        .floating-coin { position: fixed; pointer-events: none; font-size: 28px; animation: floatUp 1s ease-out forwards; z-index: 9999; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(-100px) rotate(20deg); } }
+        .banner-container { width: 100%; overflow: hidden; border-radius: 28px; background: #0f172a; margin-bottom: 24px; height: 180px; position: relative; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+        .banner-slider { display: flex; width: 400%; height: 100%; animation: slide 14s infinite cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; }
+        .banner-slide { width: 25%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #f59e0b, #f97316); color: #0f172a; font-weight: bold; font-size: 1.8rem; text-align: center; padding: 20px; gap: 12px; position: relative; overflow: hidden; }
+        .banner-slide::after { content: ''; position: absolute; top: -50%; left: -60%; width: 200%; height: 200%; background: linear-gradient(115deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 90%); transform: rotate(25deg); animation: shine 3s infinite; }
+        @keyframes shine { 0% { transform: translateX(-100%) rotate(25deg); } 20% { transform: translateX(100%) rotate(25deg); } 100% { transform: translateX(100%) rotate(25deg); } }
+        .banner-slide a { color: #0f172a; text-decoration: underline; font-size: 1.2rem; background: rgba(255,255,255,0.3); padding: 6px 16px; border-radius: 40px; font-weight: bold; }
+        @keyframes slide { 0% { transform: translateX(0); } 20% { transform: translateX(0); } 25% { transform: translateX(-25%); } 45% { transform: translateX(-25%); } 50% { transform: translateX(-50%); } 70% { transform: translateX(-50%); } 75% { transform: translateX(-75%); } 95% { transform: translateX(-75%); } 100% { transform: translateX(0); } }
+        @media (max-width: 640px) { 
+            .banner-container { height: 150px; } 
+            .banner-slide { font-size: 1.2rem; } 
+            .grid-2 { grid-template-columns: 1fr; } 
+            .grid-promo { gap: 8px !important; }
+            .simple-watch-card { padding: 10px !important; }
+            .simple-watch-card .thumbnail { width: 50px !important; height: 50px !important; }
+            .simple-watch-card h4 { font-size: 12px !important; }
+            .simple-watch-card button { font-size: 10px !important; padding: 5px 8px !important; }
+            .hub-buttons { flex-direction: row !important; flex-wrap: nowrap !important; justify-content: center; overflow-x: auto; } 
+            .round-coin { width: 60px; height: 60px; } 
+            .round-coin strong { font-size: 18px; } 
+            body { overflow-x: hidden; }
+            #otherPromotionsList { width: 100%; overflow: hidden; }
+            .withdraw-options { flex-direction: column; }
+            .share-buttons { flex-wrap: wrap; gap: 10px; }
+            .share-btn { padding: 8px 16px; font-size: 12px; }
+            .auth-logo h1 { font-size: 28px; }
+            .auth-tagline { font-size: 12px; }
+            .leaderboard-filters { flex-direction: column; gap: 8px; }
+            .leaderboard-filters button { width: 100%; }
+        }
+        .referral-stats { display: flex; gap: 16px; justify-content: center; margin: 16px 0; }
+        .stat-box { background: #0F172A; border-radius: 28px; padding: 12px 20px; text-align: center; flex: 1; }
+        .history-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #334155; cursor: pointer; }
+        .wheel-container { position: relative; width: 250px; height: 250px; margin: 20px auto; }
+        canvas#wheelCanvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 0 8px #F59E0B; }
+        .scratch-area { width: 220px; height: 220px; background: #777; margin: 20px auto; display: flex; align-items: center; justify-content: center; border-radius: 20px; cursor: pointer; font-size: 24px; color: white; text-shadow: 1px 1px 0 black; background-image: repeating-linear-gradient(45deg, #888, #888 15px, #aaa 15px, #aaa 30px); }
+        .scratch-area.scratched { background: #4ade80; color: black; text-shadow: none; }
+        .hub-buttons { display: flex; gap: 12px; margin: 16px 0; justify-content: center; flex-wrap: nowrap; }
+        .compact-card { padding: 12px; margin-bottom: 12px; }
+        .compact-card .promo-thumbnail { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; margin-right: 12px; float: left; }
+        .clearfix::after { content: ""; clear: both; display: table; }
+        .small-title { font-weight: bold; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .refresh-btn-small { background: #3B82F6; padding: 5px 12px; font-size: 12px; }
+        .simple-watch-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            padding: 12px;
+            transition: 0.2s;
+            border-left: 3px solid #F59E0B;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .simple-watch-card .top-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .simple-watch-card .thumbnail {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 14px;
+            background: #0F172A;
+            flex-shrink: 0;
+        }
+        .simple-watch-card .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .simple-watch-card h4 {
+            font-size: 14px;
+            margin: 0 0 4px 0;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .simple-watch-card button {
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px;
+            font-size: 12px;
+        }
+        .withdraw-category {
+            margin: 20px 0;
+            text-align: left;
+            border-top: 1px solid #334155;
+            padding-top: 16px;
+        }
+        .withdraw-category h4 {
+            margin-bottom: 12px;
+            color: #F59E0B;
+        }
+        .withdraw-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .withdraw-option {
+            background: #0F172A;
+            border-radius: 20px;
+            padding: 12px;
+            min-width: 120px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #334155;
+        }
+        .withdraw-option:hover { border-color: #F59E0B; transform: scale(1.02); }
+        .withdraw-option.disabled { opacity: 0.5; cursor: not-allowed; }
+        .withdraw-option .coins { font-size: 16px; font-weight: bold; color: #F59E0B; }
+        .withdraw-option .value { font-size: 14px; color: #94A3B8; }
+        .history-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 24px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid #F59E0B;
+            text-align: left;
+        }
+        .history-card .title {
+            font-weight: bold;
+            font-size: 16px;
+            color: #F59E0B;
+            margin-bottom: 8px;
+        }
+        .history-card .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .status-pending { background: #F59E0B20; color: #F59E0B; }
+        .status-approved { background: #10B98120; color: #10B981; }
+        .status-rejected { background: #EF444420; color: #EF4444; }
+        .history-card .details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #94A3B8;
+        }
+        .code-box {
+            background: #0F172A;
+            border-radius: 16px;
+            padding: 10px 12px;
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #334155;
+        }
+        .code-box span {
+            font-family: monospace;
+            color: #F59E0B;
+            font-size: 14px;
+            word-break: break-all;
+            flex: 1;
+        }
+        .copy-btn {
+            background: none;
+            border: none;
+            color: #3B82F6;
+            cursor: pointer;
+            font-size: 18px;
+            margin-left: 10px;
+            padding: 0 5px;
+        }
+        .copy-btn:hover { color: #F59E0B; }
+        .claim-code-btn {
+            margin-top: 12px;
+            width: 100%;
+        }
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10B981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 14px;
+            z-index: 2000;
+            animation: fadeOut 2s ease forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+        .referral-stats-card {
+            background: #0F172A;
+            border-radius: 28px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .referral-stats-card .stats-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 12px;
+        }
+        .referral-stats-card .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #F59E0B;
+        }
+        .referral-stats-card .stat-label {
+            font-size: 12px;
+            color: #94A3B8;
+        }
+        .share-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .share-btn {
+            background: #0F172A;
+            border: 1px solid #334155;
+            border-radius: 50px;
+            padding: 10px 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            text-decoration: none;
+        }
+        .share-btn i { font-size: 20px; }
+        .share-btn.whatsapp:hover { background: #25D366; border-color: #25D366; }
+        .share-btn.telegram:hover { background: #0088cc; border-color: #0088cc; }
+        .share-btn.instagram:hover { background: #E4405F; border-color: #E4405F; }
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .auth-logo h1 {
+            font-size: 36px;
+            background: linear-gradient(135deg, #F59E0B, #F97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none;
+        }
+        .auth-tagline {
+            color: #94A3B8;
+            font-size: 14px;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+        .google-btn {
+            background: white;
+            color: #0F172A;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 60px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        .google-btn i {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- AUTH SECTION (Google Sign-In) -->
+<div id="authSection" class="glass-card" style="max-width:450px; margin: 20vh auto; padding:28px; text-align:center;">
+    <div class="auth-logo">
+        <h1>💰 JS & SOFU EARN</h1>
+        <div class="auth-tagline">Daily Earn • Daily Withdraw • Instant Rewards</div>
+    </div>
+    <button id="googleSignInBtn" class="google-btn"><i class="fab fa-google"></i> Sign in with Google</button>
+    <p style="margin-top:16px; font-size:12px;">⚡ Your coins will be saved to your Google account</p>
+</div>
+
+<!-- USER MAIN PANEL (will be shown after login) -->
+<div id="mainApp" style="display:none; padding:16px;">
+    <div class="flex-between" style="margin-bottom:20px;">
+        <h2>✨ JS & SOFU EARN</h2>
+        <div class="round-coin" id="balanceClicker">
+            <span>🪙</span>
+            <strong id="walletBalance">0</strong>
+        </div>
+        <button id="logoutBtn" style="background:#EF4444; border:none; padding:8px 16px; border-radius:40px;">Exit</button>
+    </div>
+    <div class="bottom-nav">
+        <div class="nav-item active" data-tab="home"><span class="nav-icon">🏠</span><span>Home</span></div>
+        <div class="nav-item" data-tab="videohub"><span class="nav-icon">📹</span><span>Video Hub</span></div>
+        <div class="nav-item" data-tab="invite"><span class="nav-icon">👥</span><span>Invite</span></div>
+        <div class="nav-item" data-tab="settings"><span class="nav-icon">⚙️</span><span>Settings</span></div>
+        <div class="nav-item" data-tab="leader"><span class="nav-icon">🏆</span><span>Leader</span></div>
+    </div>
+    <!-- HOME TAB -->
+    <div id="homeTab" class="tab-content active-tab">
+        <div class="banner-container"><div class="banner-slider" id="bannerSlider"></div></div>
+        <div class="grid-2">
+            <div class="video-card"><div class="flex-between"><span>🎮 Game Zone</span><span class="coin-badge">+8-10</span></div><button id="openGameModalBtn" class="btn-gold">Play</button><div>Today: <span id="gameProgress">0</span>/10</div><div class="progress-bar"><div id="gameProgressFill" class="progress-fill"></div></div></div>
+            <div class="video-card"><div class="flex-between"><span>📖 Read Article</span><span class="coin-badge">+9-11</span></div><button id="readArticleBtn" class="btn-gold">Read</button><div>Today: <span id="readArticleCount">0</span>/10</div><div class="progress-bar"><div id="readArticleFill" class="progress-fill"></div></div></div>
+            <div class="video-card"><div class="flex-between"><span>🎫 Scratch Card</span><span class="coin-badge">+9-12</span></div><button id="scratchBtn" class="btn-gold">Scratch</button><div>Today: <span id="scratchProgress">0</span>/10</div><div class="progress-bar"><div id="scratchProgressFill" class="progress-fill"></div></div></div>
+            <div class="video-card"><div class="flex-between"><span>🎡 Spin & Win</span><span class="coin-badge">+9-12</span></div><button id="spinBtn" class="btn-gold">Spin</button><div>Today: <span id="spinProgress">0</span>/10</div><div class="progress-bar"><div id="spinProgressFill" class="progress-fill"></div></div></div>
+            <div class="video-card"><div class="flex-between"><span>📺 Offerwall</span><span class="coin-badge">+15</span></div><button id="watchVideoBtn" class="btn-gold">Watch Ad</button><div>Today: <span id="videoProgress">0</span>/5</div><div class="progress-bar"><div id="videoProgressFill" class="progress-fill"></div></div></div>
+            <div class="video-card"><div class="flex-between"><span>🎁 Daily Bonus</span><span id="dailyBonusStatus" class="coin-badge">Available</span></div><button id="claimDailyBonusBtn" class="btn-gold">Claim 20 Coins</button><div id="dailyBonusTimer"></div></div>
+        </div>
+        <div class="glass-card" style="padding:20px; margin-top:20px;">
+            <input type="text" id="promoCodeInput" placeholder="Enter Promo Code">
+            <button id="redeemPromoBtn" class="btn-gold">Redeem</button>
+        </div>
+        <div id="homeBottomAd" class="ad-container"></div>
+    </div>
+    <!-- VIDEO HUB (simplified for brevity) -->
+    <div id="videohubTab" class="tab-content">
+        <div class="flex-between"><h3>Video Hub</h3><span class="coin-badge" id="videoHubBalance">0</span></div>
+        <div class="hub-buttons">
+            <button class="btn-gold hub-tab-btn active" data-hubtab="promote">Promote</button>
+            <button class="btn-gold hub-tab-btn" data-hubtab="watchpromo">Watch Promo</button>
+            <button class="btn-gold hub-tab-btn" data-hubtab="mystatus">My Status</button>
+        </div>
+        <div id="promoteTab" class="hub-content active"><h3>📢 Promote Your Video</h3><div id="packagesList"></div><div id="promoteForm" style="display:none;"><input id="youtubeLink" placeholder="YouTube Link"><p id="selectedPackageInfo"></p><button id="submitPromotionBtn" class="btn-gold">Submit Campaign</button></div></div>
+        <div id="watchpromoTab" class="hub-content" style="display:none;"><div class="flex-between"><h3>👀 Watch Promoted Videos (Earn 13 Coins each)</h3><button id="refreshWatchPromoBtn" class="btn-gold refresh-btn-small">🔄 Refresh</button></div><div id="otherPromotionsList" class="grid-promo"></div></div>
+        <div id="mystatusTab" class="hub-content" style="display:none;"><h3>📊 My Promotions</h3><button id="refreshMyStatusBtn" class="btn-gold">Refresh</button><div id="userPromotionsList" style="margin-top:16px;"></div></div>
+    </div>
+    <!-- INVITE TAB -->
+    <div id="inviteTab" class="tab-content">
+        <div class="glass-card" style="padding:24px; text-align:center;">
+            <h3>👥 Invite Friends & Earn</h3>
+            <div class="referral-stats-card">
+                <div class="stats-row">
+                    <div class="stat">
+                        <div class="stat-value" id="referralCountDisplay">0</div>
+                        <div class="stat-label">Referrals</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="referralCoinsDisplay">0</div>
+                        <div class="stat-label">Coins Earned</div>
+                    </div>
+                </div>
+            </div>
+            <div class="referral-code" id="referralCodeDisplay" style="background:#0F172A; padding:12px; border-radius:40px; font-family: monospace; margin-bottom: 16px;">CODE</div>
+            <button id="copyRefCodeBtn" class="btn-gold" style="margin-bottom: 16px;">📋 Copy Referral Code</button>
+            <div class="share-buttons">
+                <div class="share-btn whatsapp" id="shareWhatsApp"><i class="fab fa-whatsapp"></i> WhatsApp</div>
+                <div class="share-btn telegram" id="shareTelegram"><i class="fab fa-telegram"></i> Telegram</div>
+                <div class="share-btn instagram" id="shareInstagram"><i class="fab fa-instagram"></i> Instagram</div>
+            </div>
+            <p style="margin-top:16px; font-size:12px; color:#94A3B8;">Share and earn 25 coins per referral!</p>
+        </div>
+        <div id="inviteBottomAd" class="ad-container"></div>
+    </div>
+    <!-- SETTINGS -->
+    <div id="settingsTab" class="tab-content">
+        <div class="glass-card" style="padding:20px;"><h3>👤 Profile</h3><p><strong>Email:</strong> <span id="settingsUsername"></span></p><hr><h4>📜 Withdrawal History</h4><div id="withdrawalHistoryList" style="max-height:200px; overflow-y:auto; cursor:pointer;"></div><hr><h4>🆘 Help & Support</h4><div class="flex-between" style="gap:12px; margin-top:12px;"><a id="telegramLink" href="#" target="_blank" class="btn-gold" style="background:#0088cc;"><i class="fab fa-telegram"></i> Telegram</a><a id="instagramLink" href="#" target="_blank" class="btn-gold" style="background:#E4405F;"><i class="fab fa-instagram"></i> Instagram</a></div><p style="margin-top:16px; font-size:12px;">🔗 Links updated by admin</p></div>
+    </div>
+    <!-- LEADERBOARD -->
+    <div id="leaderTab" class="tab-content">
+        <div class="glass-card" style="padding:20px;">
+            <div class="flex-between"><h3>🏆 Top Earners</h3></div>
+            <div class="leaderboard-filters">
+                <button data-filter="daily" class="active">📅 Daily</button>
+                <button data-filter="weekly">📆 Weekly</button>
+                <button data-filter="monthly">📊 Monthly</button>
+            </div>
+            <div id="leaderboardList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== FIREBASE CONFIG (YOUR CONFIG) ==========
+    const firebaseConfig = {
+        apiKey: "AIzaSyCztKt6OtB2fUibuoj0uedjdj45ynLXABU",
+        authDomain: "jssafuearn.firebaseapp.com",
+        projectId: "jssafuearn",
+        storageBucket: "jssafuearn.firebasestorage.app",
+        messagingSenderId: "706015961099",
+        appId: "1:706015961099:web:a1fe63252d43fd0aeb670e"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null;
+    let userData = null;
+
+    // Load user data from Firestore
+    async function loadUserData(uid) {
+        const doc = await db.collection("users").doc(uid).get();
+        if (doc.exists) {
+            userData = doc.data();
+        } else {
+            const newUser = {
+                coins: 50,
+                referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                createdAt: new Date().toISOString()
+            };
+            await db.collection("users").doc(uid).set(newUser);
+            userData = newUser;
+        }
+        return userData;
+    }
+
+    function updateUI() {
+        if (!userData) return;
+        document.getElementById("walletBalance").innerText = userData.coins;
+        document.getElementById("videoHubBalance").innerText = userData.coins;
+        document.getElementById("settingsUsername").innerText = currentUser.email;
+        document.getElementById("referralCodeDisplay").innerText = userData.referralCode || "";
+    }
+
+    async function updateCoins(amount, task) {
+        if (!currentUser) return false;
+        const userRef = db.collection("users").doc(currentUser.uid);
+        await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(userRef);
+            const newCoins = (doc.data().coins || 0) + amount;
+            transaction.update(userRef, { coins: newCoins });
+        });
+        await loadUserData(currentUser.uid);
+        updateUI();
+        return true;
+    }
+
+    // Google Sign-In
+    const provider = new firebase.auth.GoogleAuthProvider();
+    document.getElementById("googleSignInBtn").onclick = () => {
+        auth.signInWithPopup(provider)
+            .then(async (result) => {
+                currentUser = result.user;
+                await loadUserData(currentUser.uid);
+                document.getElementById("authSection").style.display = "none";
+                document.getElementById("mainApp").style.display = "block";
+                updateUI();
+                // You can add other functions here (renderPackages, etc.)
+            })
+            .catch((error) => {
+                alert("Login failed: " + error.message);
+            });
+    };
+
+    // Logout
+    document.getElementById("logoutBtn").onclick = () => {
+        auth.signOut().then(() => {
+            document.getElementById("authSection").style.display = "block";
+            document.getElementById("mainApp").style.display = "none";
+            currentUser = null;
+            userData = null;
+        });
+    };
+
+    // Simple functions to avoid errors (you can expand later)
+    function renderPackages() { }
+    function renderMyStatus() { }
+    function renderWatchPromo() { }
+    function renderLeaderboard() { }
+    function renderBanner() { }
+    function updateSocialLinks() { }
+    function updateDailyBonusUI() { }
+    function updateReferralUI() { }
+    function loadHomeBottomAd() { }
+    function loadInviteBottomAd() { }
+
+    // Check if already logged in
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            await loadUserData(user.uid);
+            document.getElementById("authSection").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+            updateUI();
+        }
+    });
+</script>
+</body>
+</html>
